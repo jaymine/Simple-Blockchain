@@ -20,6 +20,18 @@ def verify (digest, signedBlockdata, publickeyfile):
     assert verified, 'Signature verification failed'
     print 'Successfully verified message\n'
 
+def getNonce(data, previousHash):
+    nonce = 0
+    hash = "1"
+    blockData = ""
+    while(hash.startswith("0") == False):
+        digest = SHA256.new()
+        blockData = data + " " + previousHash + " " + str (nonce)
+        digest.update(blockData)
+        hash = digest.hexdigest()
+        nonce = nonce + 1
+    return blockData, digest
+
 class Block:
     def __init__(self, data, signedData, publicKeyFile):
         self.data = data
@@ -33,15 +45,13 @@ public_keys = ["a_public_key.pem", "b_public_key.pem", "c_public_key.pem"]
 blockchain = {}
 previousHash = "0000000000000000000000000000000000000000000000000000000000000000"
 for i in range(0,3):
-    blockData = awardedPerson[i] + " " + previousHash
-    digest = SHA256.new()
-    digest.update(blockData)
+    blockData, digest = getNonce(awardedPerson[i], previousHash)
     signed = sign(digest, private_keys[i])
     blockchain[digest.hexdigest()] = Block(blockData, signed, public_keys[i])
     previousHash = digest.hexdigest()
 
 # Read in order
-latestedHash = previousHash 
+latestedHash = previousHash
 while (latestedHash != "0000000000000000000000000000000000000000000000000000000000000000"):
     print "hash: " + latestedHash
     print "data: " + blockchain[latestedHash].data
@@ -50,4 +60,3 @@ while (latestedHash != "00000000000000000000000000000000000000000000000000000000
     digest.update(blockchain[latestedHash].data)
     verify(digest, blockchain[latestedHash].signedData, blockchain[latestedHash].publicKeyFile)
     latestedHash = blockchain[latestedHash].data.split(" ")[1]
-
